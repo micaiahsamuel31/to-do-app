@@ -1,0 +1,391 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #1d2433;
+  background: #f5f6f8;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(26, 115, 232, 0.15), transparent 28rem),
+    radial-gradient(circle at 86% 18%, rgba(22, 128, 106, 0.13), transparent 24rem),
+    linear-gradient(140deg, #f8fafc 0%, #eef2f7 55%, #f6f7f3 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(26, 115, 232, 0.25);
+  outline-offset: 2px;
+}
+
+#root {
+  min-height: 100vh;
+  padding: 36px clamp(16px, 4vw, 56px);
+}
+
+.to-do-list {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 64px;
+  margin-bottom: 34px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #121926;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #1a73e8;
+  box-shadow: 0 10px 22px rgba(26, 115, 232, 0.24);
+}
+
+.navbar-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #526071;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.navbar-stats span {
+  padding: 8px 12px;
+  border: 1px solid #dbe3ec;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.to-do-list h1 {
+  margin: 0 0 24px;
+  color: #121926;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.to-do-list > div:first-of-type {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.to-do-list input[type="text"],
+.status-select {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #111827;
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.03);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.status-select {
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.to-do-list input[type="text"]::placeholder {
+  color: #8a95a5;
+}
+
+.to-do-list input[type="text"]:focus,
+.status-select:focus {
+  border-color: #1a73e8;
+  box-shadow:
+    inset 0 1px 0 rgba(15, 23, 42, 0.03),
+    0 0 0 4px rgba(26, 115, 232, 0.12);
+}
+
+.add-button {
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  background: #1a73e8;
+  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.24);
+  transition:
+    background 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.add-button:hover {
+  background: #155fc2;
+  box-shadow: 0 14px 28px rgba(26, 115, 232, 0.28);
+  transform: translateY(-1px);
+}
+
+.task-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.task-section {
+  margin-top: 22px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.task-section h2 {
+  margin: 0 0 12px;
+  color: #354154;
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.task-section + .task-section {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.empty {
+  margin: 8px 0 18px;
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.to-do-list ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tasks;
+}
+
+.to-do-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid #e1e7ef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.to-do-list li:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.to-do-list li::before {
+  counter-increment: tasks;
+  content: counter(tasks);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #155fc2;
+  font-size: 0.9rem;
+  font-weight: 900;
+  background: #e8f1ff;
+}
+
+.text {
+  min-width: 0;
+  color: #202938;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.done .text {
+  color: #697586;
+  text-decoration: line-through;
+}
+
+.delete-task,
+.completed-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 7px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition:
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.to-do-list li .delete-task,
+.to-do-list li .completed-button,
+.to-do-list li .status-select {
+  grid-column: span 1;
+}
+
+.to-do-list li .status-select {
+  min-height: 38px;
+  min-width: 132px;
+  padding: 0 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.delete-task:hover,
+.completed-button:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+
+.delete-task {
+  background: #d14343;
+}
+
+.completed-button {
+  background: #16806a;
+}
+
+.done .completed-button {
+  background: #475467;
+}
+
+.moveup-task,
+.movedown-task {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition:
+    transform 140ms ease,
+    filter 140ms ease;
+}
+
+.moveup-task:hover,
+.movedown-task:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.96);
+}
+
+.moveup-task {
+  background: #16806a;
+}
+
+.movedown-task {
+  background: #b88700;
+}
+
+@media (max-width: 640px) {
+  #root {
+    padding: 18px 12px;
+  }
+
+  .to-do-list {
+    width: 100%;
+  }
+
+  .to-do-list h1 {
+    margin-bottom: 20px;
+  }
+
+  .navbar {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 26px;
+  }
+
+  .navbar-stats {
+    flex-wrap: wrap;
+  }
+
+  .task-columns {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .task-section + .task-section {
+    padding-top: 20px;
+    border-top: 1px solid #e1e7ef;
+  }
+
+  .to-do-list > div:first-of-type,
+  .to-do-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .to-do-list li::before {
+    display: none;
+  }
+
+  .delete-task,
+  .completed-button,
+  .moveup-task,
+  .movedown-task,
+  .add-button,
+  .status-select {
+    width: 100%;
+  }
+}
