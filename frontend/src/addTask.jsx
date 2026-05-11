@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "./navbar";
 import Sidebar from "./sidebar";
+import Settings from "./settings";
 import "./addTask.css";
 
 
@@ -9,6 +10,17 @@ function ToDoList(){
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("")
   const [activeView, setActiveView] = useState("pending");
+  const [timetableItems, setTimetableItems] = useState([]);
+  const [newTimetableTime, setNewTimetableTime] = useState("");
+  const [newTimetableTitle, setNewTimetableTitle] = useState("");
+  const [activeTimetableDay, setActiveTimetableDay] = useState("mon");
+  const [currentPage, setCurrentPage] = useState("workspaces");
+  const [previousPage, setPreviousPage] = useState("workspaces");
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem("taskboard-theme");
+
+    return savedTheme === "light" ? "light" : "dark";
+  });
   const [workspaces, setWorkspaces] = useState([
     { id: "home", name: "Home" },
     { id: "work", name: "Work" },
@@ -17,16 +29,40 @@ function ToDoList(){
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
+  const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
   const workspaceInputRef = useRef(null);
+  const timetableDays = [
+    { id: "sun", label: "S" },
+    { id: "mon", label: "M" },
+    { id: "tue", label: "T" },
+    { id: "wed", label: "W" },
+    { id: "thu", label: "T" },
+    { id: "fri", label: "F" },
+    { id: "sat", label: "S" },
+  ];
 
   const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId);
   const workspaceTasks = tasks.filter((task) => task.workspaceId === activeWorkspaceId);
   const pendingTasks = workspaceTasks.filter((task) => !task.completed);
   const completedTasks = workspaceTasks.filter((task) => task.completed);
-  const workspaceCounts = workspaces.reduce((counts, workspace) => {
-    counts[workspace.id] = tasks.filter((task) => task.workspaceId === workspace.id).length;
-    return counts;
-  }, {});
+  const workspaceTimetable = timetableItems
+    .filter((item) => item.workspaceId === activeWorkspaceId && item.day === activeTimetableDay)
+    .sort((a, b) => a.time.localeCompare(b.time));
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+    localStorage.setItem("taskboard-theme", theme);
+  }, [theme]);
+
+  function getWorkspaceProgress(workspaceId){
+    const workspaceTaskList = tasks.filter((task) => task.workspaceId === workspaceId);
+    const completedTaskList = workspaceTaskList.filter((task) => task.completed);
+    const total = workspaceTaskList.length;
+    const completed = completedTaskList.length;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    return { total, completed, percent };
+  }
 
   function handleInputChange(event){
     setNewTask(event.target.value);
@@ -72,6 +108,43 @@ function ToDoList(){
     ));
   }
 
+  function addTimetableItem(){
+    if (newTimetableTitle.trim() === "") return;
+
+    const timetableItem = {
+      id: Date.now(),
+        title: newTimetableTitle.trim(),
+        time: newTimetableTime,
+        day: activeTimetableDay,
+        workspaceId: activeWorkspaceId,
+      };
+
+    setTimetableItems([...timetableItems, timetableItem]);
+    setNewTimetableTitle("");
+    setNewTimetableTime("");
+  }
+
+  function handleTimetableKeyDown(event){
+    if(event.key==="Enter"){
+      addTimetableItem();
+    }
+  }
+
+  function removeTimetableItem(id){
+    setTimetableItems(timetableItems.filter((item) => item.id !== id));
+  }
+
+  function formatTimetableTime(time){
+    if (time === "") return "Anytime";
+
+    const [hourValue, minute] = time.split(":");
+    const hour = Number(hourValue);
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    const period = hour >= 12 ? "PM" : "AM";
+
+    return `${displayHour}:${minute} ${period}`;
+  }
+
   function addWorkspace(){
     const workspaceName = newWorkspaceName.trim();
 
@@ -84,6 +157,7 @@ function ToDoList(){
     if (existingWorkspace) {
       setActiveWorkspaceId(existingWorkspace.id);
       setActiveView("pending");
+      setCurrentPage("workspace");
       setNewWorkspaceName("");
       return;
     }
@@ -96,6 +170,7 @@ function ToDoList(){
     setWorkspaces([...workspaces, workspace]);
     setActiveWorkspaceId(workspace.id);
     setActiveView("pending");
+    setCurrentPage("workspace");
     setNewWorkspaceName("");
   }
 
@@ -110,13 +185,47 @@ function ToDoList(){
     setActiveView("pending");
   }
 
+  function openWorkspace(workspaceId){
+    changeWorkspace(workspaceId);
+    setCurrentPage("workspace");
+  }
+
+  function handleWorkspaceCardKeyDown(event, workspaceId){
+    if (event.target !== event.currentTarget) return;
+
+    if(event.key==="Enter" || event.key===" "){
+      event.preventDefault();
+      openWorkspace(workspaceId);
+    }
+  }
+
   function focusWorkspaceInput(){
-    workspaceInputRef.current?.focus();
+    setCurrentPage("workspaces");
+    setTimeout(() => workspaceInputRef.current?.focus(), 0);
+  }
+
+  function openSettings(){
+    setPreviousPage(currentPage);
+    setCurrentPage("settings");
+  }
+
+  function closeSettings(){
+    setCurrentPage(previousPage);
+  }
+
+  function toggleTheme(){
+    setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark");
+  }
+
+  function changeTaskView(view){
+    setActiveView(view);
+    setCurrentPage("workspace");
   }
 
   function startWorkspaceRename(workspace){
     setEditingWorkspaceId(workspace.id);
     setEditingWorkspaceName(workspace.name);
+    setOpenWorkspaceMenuId(null);
   }
 
   function cancelWorkspaceRename(){
@@ -152,38 +261,189 @@ function ToDoList(){
     }
   }
 
+  function toggleWorkspaceMenu(workspaceId){
+    setOpenWorkspaceMenuId(openWorkspaceMenuId === workspaceId ? null : workspaceId);
+  }
+
+  function deleteWorkspace(workspaceId){
+    if (workspaces.length <= 1) return;
+
+    const remainingWorkspaces = workspaces.filter((workspace) => workspace.id !== workspaceId);
+
+    setWorkspaces(remainingWorkspaces);
+    setTasks(tasks.filter((task) => task.workspaceId !== workspaceId));
+    setTimetableItems(timetableItems.filter((item) => item.workspaceId !== workspaceId));
+    setOpenWorkspaceMenuId(null);
+
+    if (editingWorkspaceId === workspaceId) {
+      cancelWorkspaceRename();
+    }
+
+    if (activeWorkspaceId === workspaceId) {
+      setActiveWorkspaceId(remainingWorkspaces[0].id);
+      setActiveView("pending");
+    }
+  }
+
   return(
   <div className="app-shell">
     <Sidebar
       activeView={activeView}
       pendingCount={pendingTasks.length}
       completedCount={completedTasks.length}
-      onViewChange={setActiveView}
+      onViewChange={changeTaskView}
     />
 
     <main className="to-do-list">
       <Navbar
-        workspaceName={activeWorkspace?.name || "Workspace"}
+        workspaceName={
+          currentPage === "settings"
+            ? "Settings"
+            : currentPage === "workspace"
+              ? activeWorkspace?.name || "Workspace"
+              : "All Workspaces"
+        }
         onAddWorkspaceClick={focusWorkspaceInput}
+        onSettingsClick={openSettings}
       />
     
   
-      <h1>To-Do-List</h1>
-  
-      <div>
-        <input
-              type="text"
-              placeholder="Enter a task..."
-              value={newTask}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}/>
-  
-        <button className="add-button" onClick={addTask}>
-          Add
-        </button>
-      </div>
+      {currentPage === "settings" ? (
+        <Settings
+          onBack={closeSettings}
+          onThemeToggle={toggleTheme}
+          theme={theme}
+          totalTasks={tasks.length}
+          totalWorkspaces={workspaces.length}
+        />
+      ) : currentPage === "workspace" ? (
+        <>
+          <button
+            className="back-button"
+            onClick={() => setCurrentPage("workspaces")}
+            type="button"
+          >
+            Back to Workspaces
+          </button>
 
-      <section className="workspace-section workspace-section-main">
+          <h1>{activeWorkspace?.name}</h1>
+    
+          <div>
+            <input
+                  type="text"
+                  placeholder="Enter a task..."
+                  value={newTask}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}/>
+    
+            <button className="add-button" onClick={addTask}>
+              Add
+            </button>
+          </div>
+
+          <section className="task-section">
+            <h2>Your Tasks - {activeWorkspace?.name}</h2>
+            {activeView === "pending" ? (
+              pendingTasks.length === 0 ? (
+                <p className="empty">No Tasks found</p>
+              ) : (
+                <ol>
+                  {pendingTasks.map((task)=>
+                    <li key={task.id}>
+                      <span className="text">{task.title}</span>
+                      <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
+                      <button className="completed-button" onClick={()=> moveToCompleted(task.id)}>Completed</button>
+                    </li>
+                  )}
+                </ol>
+              )
+            ) : completedTasks.length === 0 ? (
+              <p className="empty">No Tasks found</p>
+            ) : (
+              <ol>
+                {completedTasks.map((task)=>
+                  <li key={task.id} className="done">
+                    <span className="text">{task.title}</span>
+                    <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
+                    <button className="completed-button" onClick={()=> moveToPending(task.id)}>Pending</button>
+                  </li>
+                )}
+              </ol>
+            )}
+          </section>
+
+          <section className="timetable-section">
+            <div className="timetable-header">
+              <div>
+                <h2>Timetable</h2>
+                <p>You have {workspaceTimetable.length} items Today</p>
+              </div>
+              <button
+                className="timetable-reset"
+                onClick={() => setActiveTimetableDay("mon")}
+                type="button"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="timetable-days">
+              {timetableDays.map((day) => (
+                <button
+                  className={activeTimetableDay === day.id ? "active" : ""}
+                  key={day.id}
+                  onClick={() => setActiveTimetableDay(day.id)}
+                  type="button"
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="timetable-form">
+              <input
+                type="time"
+                value={newTimetableTime}
+                onChange={(event) => setNewTimetableTime(event.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Add timetable item..."
+                value={newTimetableTitle}
+                onChange={(event) => setNewTimetableTitle(event.target.value)}
+                onKeyDown={handleTimetableKeyDown}
+              />
+              <button type="button" onClick={addTimetableItem}>
+                Add
+              </button>
+            </div>
+
+            {workspaceTimetable.length === 0 ? (
+              <p className="empty">No timetable items found</p>
+            ) : (
+              <div className="timetable-list">
+                {workspaceTimetable.map((item) => (
+                  <div className="timetable-item" key={item.id}>
+                    <div className="timetable-time">
+                      <span className="timetable-dot" />
+                      <time>{formatTimetableTime(item.time)}</time>
+                    </div>
+                    <div className="timetable-card">
+                      <strong>{item.title}</strong>
+                      <span>{activeWorkspace?.name} schedule</span>
+                      <button type="button" onClick={() => removeTimetableItem(item.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <section className="workspace-section workspace-section-main">
+        <h1>Workspaces</h1>
         <div className="sidebar-section-title">Workspaces</div>
 
         <div className="workspace-create-card">
@@ -191,7 +451,7 @@ function ToDoList(){
             <input
               ref={workspaceInputRef}
               type="text"
-              placeholder="College, groceries..."
+              placeholder="Enter a new Workspace"
               value={newWorkspaceName}
               onChange={(event) => setNewWorkspaceName(event.target.value)}
               onKeyDown={handleWorkspaceKeyDown}
@@ -203,8 +463,10 @@ function ToDoList(){
         </div>
 
         <div className="workspace-list">
-          {workspaces.map((workspace) => (
-            editingWorkspaceId === workspace.id ? (
+          {workspaces.map((workspace) => {
+            const progress = getWorkspaceProgress(workspace.id);
+
+            return editingWorkspaceId === workspace.id ? (
               <div className="workspace-rename-row" key={workspace.id}>
                 <input
                   type="text"
@@ -228,62 +490,64 @@ function ToDoList(){
                     : "workspace-row"
                 }
                 key={workspace.id}
+                onClick={() => openWorkspace(workspace.id)}
+                onKeyDown={(event) => handleWorkspaceCardKeyDown(event, workspace.id)}
+                role="button"
+                tabIndex={0}
               >
-                <button
-                  className={
-                    activeWorkspaceId === workspace.id
-                      ? "workspace-button active"
-                      : "workspace-button"
-                  }
-                  onClick={() => changeWorkspace(workspace.id)}
-                  type="button"
-                >
-                  <span>{workspace.name}</span>
-                  <strong>{workspaceCounts[workspace.id] || 0}</strong>
-                </button>
-                <button
-                  className="workspace-rename-button"
-                  onClick={() => startWorkspaceRename(workspace)}
-                  type="button"
-                >
-                  Rename
-                </button>
+                <div className="workspace-card-header">
+                  <div
+                    className={
+                      activeWorkspaceId === workspace.id
+                        ? "workspace-button active"
+                        : "workspace-button"
+                    }
+                  >
+                    <span>{workspace.name}</span>
+                  </div>
+                  <div className="workspace-menu-wrap">
+                    <button
+                      aria-label={`Open ${workspace.name} workspace options`}
+                      className="workspace-menu-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleWorkspaceMenu(workspace.id);
+                      }}
+                      type="button"
+                    >
+                      ...
+                    </button>
+
+                    {openWorkspaceMenuId === workspace.id && (
+                      <div className="workspace-menu" onClick={(event) => event.stopPropagation()}>
+                        <button type="button" onClick={() => startWorkspaceRename(workspace)}>
+                          Rename
+                        </button>
+                        <button type="button" onClick={() => deleteWorkspace(workspace.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="workspace-progress">
+                  <div className="workspace-progress-meta">
+                    <span>{progress.completed} of {progress.total} completed</span>
+                    <strong>{progress.percent}%</strong>
+                  </div>
+                  <div className="workspace-progress-track">
+                    <div style={{ width: `${progress.percent}%` }} />
+                  </div>
+                </div>
               </div>
-            )
-          ))}
+            );
+          })}
         </div>
       </section>
+      )}
 
-      <section className="task-section">
-        <h2>{activeView === "pending" ? "Pending" : "Completed"} - {activeWorkspace?.name}</h2>
-        {activeView === "pending" ? (
-          pendingTasks.length === 0 ? (
-            <p className="empty">No Tasks found</p>
-          ) : (
-            <ol>
-              {pendingTasks.map((task)=>
-                <li key={task.id}>
-                  <span className="text">{task.title}</span>
-                  <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
-                  <button className="completed-button" onClick={()=> moveToCompleted(task.id)}>Completed</button>
-                </li>
-              )}
-            </ol>
-          )
-        ) : completedTasks.length === 0 ? (
-          <p className="empty">No Tasks found</p>
-        ) : (
-          <ol>
-            {completedTasks.map((task)=>
-              <li key={task.id} className="done">
-                <span className="text">{task.title}</span>
-                <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
-                <button className="completed-button" onClick={()=> moveToPending(task.id)}>Pending</button>
-              </li>
-            )}
-          </ol>
-        )}
-      </section>
+      
 
     </main>
   </div>)
