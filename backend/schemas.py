@@ -42,12 +42,14 @@ class TodoCreate(BaseModel):
     title: str
     workspace_id: int
     completed: bool = False
+    time_left_minutes: int | None = None
 
 
 class TodoUpdate(BaseModel):
     title: str | None = None
     workspace_id: int | None = None
     completed: bool | None = None
+    time_left_minutes: int | None = None
 
 
 class TodoRead(APIModel):
@@ -55,6 +57,7 @@ class TodoRead(APIModel):
     title: str
     completed: bool
     workspace_id: int | None = None
+    time_left_minutes: int | None = None
 
 
 class TimetableItemCreate(BaseModel):

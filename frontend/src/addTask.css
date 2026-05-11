@@ -574,6 +574,78 @@ select:focus-visible {
   gap: 16px;
 }
 
+.settings-profile {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.settings-profile span {
+  color: #697586;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-profile h2 {
+  margin: 6px 0 0;
+  color: #121926;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.profile-details div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.profile-details strong,
+.profile-details code {
+  min-width: 0;
+  color: #121926;
+  font-size: 0.95rem;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-details code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.logout-button {
+  justify-self: start;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 900;
+  background: #d14343;
+  transition:
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.logout-button:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+
 .settings-card {
   display: grid;
   gap: 12px;
@@ -634,6 +706,182 @@ select:focus-visible {
 
 .theme-switch.active span {
   transform: translateX(30px);
+}
+
+.login-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-panel {
+  display: grid;
+  gap: 24px;
+  width: min(100%, 440px);
+  padding: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 24px 60px rgba(31, 42, 68, 0.14);
+  backdrop-filter: blur(16px);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-brand div {
+  display: grid;
+  gap: 2px;
+}
+
+.login-brand strong {
+  color: #121926;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.login-brand span:last-child {
+  color: #697586;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.login-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 900;
+  background: #1a73e8;
+  box-shadow: 0 10px 22px rgba(26, 115, 232, 0.24);
+}
+
+.login-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.login-copy h1 {
+  margin: 0;
+  color: #121926;
+  font-size: clamp(2rem, 7vw, 2.7rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.login-copy p {
+  margin: 0;
+  color: #697586;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.login-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  border-radius: 8px;
+  background: #eef2f7;
+}
+
+.login-tabs button {
+  min-height: 40px;
+  border-radius: 7px;
+  color: #526071;
+  font-weight: 850;
+  background: transparent;
+}
+
+.login-tabs button.active {
+  color: #ffffff;
+  background: #1a73e8;
+  box-shadow: 0 10px 22px rgba(26, 115, 232, 0.2);
+}
+
+.login-form {
+  display: grid;
+  gap: 14px;
+}
+
+.login-field {
+  display: grid;
+  gap: 8px;
+}
+
+.login-field span {
+  color: #526071;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.login-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.login-field input::placeholder {
+  color: #8a95a5;
+}
+
+.login-field input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+}
+
+.login-message {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.login-message.error {
+  color: #b42318;
+  background: #fff1f0;
+}
+
+.login-message.success {
+  color: #087443;
+  background: #ecfdf3;
+}
+
+.login-submit {
+  min-height: 50px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 900;
+  background: #16806a;
+  box-shadow: 0 12px 24px rgba(22, 128, 106, 0.22);
+  transition:
+    background 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.login-submit:hover {
+  background: #126f5c;
+  box-shadow: 0 14px 28px rgba(22, 128, 106, 0.26);
+  transform: translateY(-1px);
+}
+
+.login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
 }
 
 .to-do-list h1 {
@@ -732,6 +980,19 @@ select:focus-visible {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
+.timetable-section-popup {
+  max-height: calc(100vh - 40px);
+  margin-top: 0;
+  overflow: auto;
+}
+
+.workspace-tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
 .task-section h2 {
   margin: 0 0 12px;
   color: #354154;
@@ -762,6 +1023,51 @@ select:focus-visible {
   font-size: clamp(1rem, 2vw, 1.25rem);
   line-height: 1.25;
   font-weight: 650;
+}
+
+.timetable-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.timetable-open-button,
+.timed-task-open-button {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 850;
+  background: #1a73e8;
+  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.24);
+}
+
+.timetable-open-button:hover,
+.timed-task-open-button:hover {
+  background: #155fc2;
+}
+
+.timed-task-open-button {
+  background: #16806a;
+  box-shadow: 0 12px 24px rgba(22, 128, 106, 0.22);
+}
+
+.timed-task-open-button:hover {
+  background: #126f5c;
+}
+
+.timetable-add-trigger {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 850;
+  background: #1a73e8;
+}
+
+.timetable-add-trigger:hover {
+  background: #155fc2;
 }
 
 .timetable-reset {
@@ -839,6 +1145,158 @@ select:focus-visible {
   color: #ffffff;
   font-weight: 850;
   background: #1a73e8;
+}
+
+.timetable-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.timetable-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.timetable-modal-header h3 {
+  margin: 0;
+  color: #121926;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.timetable-modal-header p {
+  margin: 4px 0 0;
+  color: #697586;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.timetable-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #526071;
+  font-size: 1rem;
+  font-weight: 900;
+  background: #eef2f7;
+}
+
+.timetable-close:hover {
+  color: #121926;
+  background: #e1e7ef;
+}
+
+.timetable-modal .timetable-form {
+  margin-bottom: 0;
+}
+
+.timed-task-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.timed-task-panel {
+  display: grid;
+  gap: 16px;
+  width: min(560px, 100%);
+  padding: 20px;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.timed-task-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.timed-task-header h2 {
+  margin: 0;
+  color: #121926;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.timed-task-header p {
+  margin: 4px 0 0;
+  color: #697586;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.timed-task-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #526071;
+  font-size: 1rem;
+  font-weight: 900;
+  background: #eef2f7;
+}
+
+.timed-task-close:hover {
+  color: #121926;
+  background: #e1e7ef;
+}
+
+.timed-task-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.timed-task-form input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.timed-task-form input::placeholder {
+  color: #8a95a5;
+}
+
+.timed-task-form input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+}
+
+.timed-task-form button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 850;
+  background: #16806a;
 }
 
 .timetable-list {
@@ -967,7 +1425,7 @@ select:focus-visible {
 
 .to-do-list li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   min-height: 64px;
@@ -1002,6 +1460,12 @@ select:focus-visible {
   background: #e8f1ff;
 }
 
+.task-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .text {
   min-width: 0;
   color: #202938;
@@ -1011,9 +1475,26 @@ select:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.time-left {
+  justify-self: start;
+  min-width: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #155fc2;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.3;
+  background: #e8f1ff;
+}
+
 .done .text {
   color: #697586;
   text-decoration: line-through;
+}
+
+.done .time-left {
+  color: #697586;
+  background: #eef2f7;
 }
 
 .delete-task,
@@ -1109,7 +1590,9 @@ select:focus-visible {
 :root[data-theme="dark"] .workspace-create-card,
 :root[data-theme="dark"] .workspace-row,
 :root[data-theme="dark"] .workspace-rename-row,
-:root[data-theme="dark"] .settings-card {
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .settings-profile,
+:root[data-theme="dark"] .login-panel {
   border-color: rgba(148, 163, 184, 0.16);
   background: rgba(20, 27, 36, 0.86);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
@@ -1129,7 +1612,12 @@ select:focus-visible {
 :root[data-theme="dark"] .sidebar-summary strong,
 :root[data-theme="dark"] .text,
 :root[data-theme="dark"] .task-section h2,
-:root[data-theme="dark"] .settings-card strong {
+:root[data-theme="dark"] .settings-card strong,
+:root[data-theme="dark"] .settings-profile h2,
+:root[data-theme="dark"] .profile-details strong,
+:root[data-theme="dark"] .profile-details code,
+:root[data-theme="dark"] .login-brand strong,
+:root[data-theme="dark"] .login-copy h1 {
   color: #eef3fb;
 }
 
@@ -1139,8 +1627,16 @@ select:focus-visible {
 :root[data-theme="dark"] .workspace-progress-meta,
 :root[data-theme="dark"] .sidebar-summary,
 :root[data-theme="dark"] .empty,
-:root[data-theme="dark"] .settings-card span {
+:root[data-theme="dark"] .settings-card span,
+:root[data-theme="dark"] .settings-profile span,
+:root[data-theme="dark"] .login-brand span:last-child,
+:root[data-theme="dark"] .login-copy p,
+:root[data-theme="dark"] .login-field span {
   color: #aeb8c9;
+}
+
+:root[data-theme="dark"] .profile-details div {
+  background: #10151c;
 }
 
 :root[data-theme="dark"] .sidebar-link {
@@ -1235,7 +1731,8 @@ select:focus-visible {
 :root[data-theme="dark"] .workspace-form input,
 :root[data-theme="dark"] .workspace-rename-row input,
 :root[data-theme="dark"] .to-do-list input[type="text"],
-:root[data-theme="dark"] .status-select {
+:root[data-theme="dark"] .status-select,
+:root[data-theme="dark"] .login-field input {
   border-color: #263446;
   color: #e8edf7;
   background: #10151c;
@@ -1243,16 +1740,42 @@ select:focus-visible {
 }
 
 :root[data-theme="dark"] .workspace-form input::placeholder,
-:root[data-theme="dark"] .to-do-list input[type="text"]::placeholder {
+:root[data-theme="dark"] .to-do-list input[type="text"]::placeholder,
+:root[data-theme="dark"] .login-field input::placeholder {
   color: #6f7d90;
 }
 
 :root[data-theme="dark"] .workspace-form input:focus,
 :root[data-theme="dark"] .workspace-rename-row input:focus,
 :root[data-theme="dark"] .to-do-list input[type="text"]:focus,
-:root[data-theme="dark"] .status-select:focus {
+:root[data-theme="dark"] .status-select:focus,
+:root[data-theme="dark"] .login-field input:focus {
   border-color: #79b7ff;
   box-shadow: 0 0 0 4px rgba(121, 183, 255, 0.16);
+}
+
+:root[data-theme="dark"] .login-tabs {
+  background: #1c2633;
+}
+
+:root[data-theme="dark"] .login-tabs button {
+  color: #aeb8c9;
+}
+
+:root[data-theme="dark"] .login-tabs button.active {
+  color: #ffffff;
+  background: #315b86;
+  box-shadow: 0 12px 28px rgba(49, 91, 134, 0.28);
+}
+
+:root[data-theme="dark"] .login-message.error {
+  color: #ffb4ab;
+  background: rgba(180, 35, 24, 0.16);
+}
+
+:root[data-theme="dark"] .login-message.success {
+  color: #87e0b5;
+  background: rgba(8, 116, 67, 0.18);
 }
 
 :root[data-theme="dark"] .workspace-form button,
@@ -1307,6 +1830,17 @@ select:focus-visible {
   color: #aeb8c9;
 }
 
+:root[data-theme="dark"] .timetable-open-button,
+:root[data-theme="dark"] .timetable-add-trigger {
+  color: #d9eaff;
+  background: #315b86;
+}
+
+:root[data-theme="dark"] .timetable-open-button:hover,
+:root[data-theme="dark"] .timetable-add-trigger:hover {
+  background: #3c6fa1;
+}
+
 :root[data-theme="dark"] .timetable-reset {
   color: #9dc8ff;
   background: #172231;
@@ -1350,6 +1884,27 @@ select:focus-visible {
 
 :root[data-theme="dark"] .timetable-form button {
   background: #315b86;
+}
+
+:root[data-theme="dark"] .timetable-modal {
+  background: rgba(3, 7, 18, 0.62);
+}
+
+:root[data-theme="dark"] .timetable-modal-header h3 {
+  color: #eef3fb;
+}
+
+:root[data-theme="dark"] .timetable-modal-header p {
+  color: #aeb8c9;
+}
+
+:root[data-theme="dark"] .timetable-close {
+  color: #d9eaff;
+  background: #172231;
+}
+
+:root[data-theme="dark"] .timetable-close:hover {
+  background: #213149;
 }
 
 :root[data-theme="dark"] .timetable-list::before {
@@ -1408,6 +1963,17 @@ select:focus-visible {
   color: #697586;
 }
 
+:root[data-theme="light"] .timetable-open-button,
+:root[data-theme="light"] .timetable-add-trigger {
+  color: #ffffff;
+  background: #1a73e8;
+}
+
+:root[data-theme="light"] .timetable-open-button:hover,
+:root[data-theme="light"] .timetable-add-trigger:hover {
+  background: #155fc2;
+}
+
 :root[data-theme="light"] .timetable-reset {
   color: #155fc2;
   background: #e8f1ff;
@@ -1451,6 +2017,28 @@ select:focus-visible {
 
 :root[data-theme="light"] .timetable-form button {
   background: #1a73e8;
+}
+
+:root[data-theme="light"] .timetable-modal {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+:root[data-theme="light"] .timetable-modal-header h3 {
+  color: #121926;
+}
+
+:root[data-theme="light"] .timetable-modal-header p {
+  color: #697586;
+}
+
+:root[data-theme="light"] .timetable-close {
+  color: #526071;
+  background: #eef2f7;
+}
+
+:root[data-theme="light"] .timetable-close:hover {
+  color: #121926;
+  background: #e1e7ef;
 }
 
 :root[data-theme="light"] .timetable-list::before {
@@ -1536,6 +2124,14 @@ select:focus-visible {
 
   .navbar-actions {
     flex-wrap: wrap;
+  }
+
+  .login-shell {
+    padding: 14px 12px;
+  }
+
+  .login-panel {
+    padding: 18px;
   }
 
   .timetable-section {

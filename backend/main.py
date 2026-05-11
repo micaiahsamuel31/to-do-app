@@ -1,108 +1,34 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
-import os
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from sqlalchemy import func
+from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
 
-from database import Base, SessionLocal, engine, get_db
+from auth.routes import router as auth_router
+from auth.security import get_current_user
+from database import Base, engine, get_db
 import models
 import schemas
-
-
-SECRET_KEY = os.getenv("SECRET_KEY", "change-this-development-secret")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def normalize_text(value: str) -> str:
     return value.strip()
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return password_context.verify(plain_password, hashed_password)
-
-
-def hash_password(password: str) -> str:
-    return password_context.hash(password)
-
-
-def get_user_by_username(db: Session, username: str) -> models.User | None:
-    return (
-        db.query(models.User)
-        .filter(func.lower(models.User.username) == username.lower())
-        .first()
-    )
-
-
-def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
-    user = get_user_by_username(db, normalize_text(username))
-
-    if user is None:
-        return None
-
-    if not verify_password(password, user.hashed_password):
-        return None
-
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    token_data = data.copy()
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    token_data.update({"exp": expire})
-
-    return jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> models.User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-
-        if username is None:
-            raise credentials_exception
-    except JWTError as exc:
-        raise credentials_exception from exc
-
-    user = get_user_by_username(db, username)
-
-    if user is None:
-        raise credentials_exception
-
-    return user
-
-
-def create_user_token(user: models.User) -> schemas.Token:
-    access_token = create_access_token(data={"sub": user.username})
-
-    return schemas.Token(access_token=access_token, token_type="bearer")
-
-
 def get_workspace_or_404(
     db: Session,
     workspace_id: int,
+    current_user: models.User,
 ) -> models.Workspace:
-    workspace = db.query(models.Workspace).filter(models.Workspace.id == workspace_id).first()
+    workspace = (
+        db.query(models.Workspace)
+        .filter(
+            models.Workspace.id == workspace_id,
+            models.Workspace.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -110,8 +36,20 @@ def get_workspace_or_404(
     return workspace
 
 
-def get_todo_or_404(db: Session, todo_id: int) -> models.Todo:
-    todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+def get_todo_or_404(
+    db: Session,
+    todo_id: int,
+    current_user: models.User,
+) -> models.Todo:
+    todo = (
+        db.query(models.Todo)
+        .join(models.Workspace)
+        .filter(
+            models.Todo.id == todo_id,
+            models.Workspace.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
@@ -119,8 +57,20 @@ def get_todo_or_404(db: Session, todo_id: int) -> models.Todo:
     return todo
 
 
-def get_timetable_item_or_404(db: Session, item_id: int) -> models.TimetableItem:
-    item = db.query(models.TimetableItem).filter(models.TimetableItem.id == item_id).first()
+def get_timetable_item_or_404(
+    db: Session,
+    item_id: int,
+    current_user: models.User,
+) -> models.TimetableItem:
+    item = (
+        db.query(models.TimetableItem)
+        .join(models.Workspace)
+        .filter(
+            models.TimetableItem.id == item_id,
+            models.Workspace.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if item is None:
         raise HTTPException(status_code=404, detail="Timetable item not found")
@@ -128,16 +78,74 @@ def get_timetable_item_or_404(db: Session, item_id: int) -> models.TimetableItem
     return item
 
 
-def ensure_default_workspaces(db: Session) -> None:
+def add_missing_sqlite_columns() -> None:
+    inspector = inspect(engine)
+
+    table_names = inspector.get_table_names()
+
+    if "workspaces" not in table_names:
+        return
+
+    workspace_columns = {
+        column["name"] for column in inspector.get_columns("workspaces")
+    }
+    workspace_indexes = inspector.get_indexes("workspaces")
+    todo_columns = set()
+
+    if "todos" in table_names:
+        todo_columns = {
+            column["name"] for column in inspector.get_columns("todos")
+        }
+
+    with engine.begin() as connection:
+        if "user_id" not in workspace_columns:
+            connection.execute(
+                text("ALTER TABLE workspaces ADD COLUMN user_id INTEGER")
+            )
+
+        if "todos" in table_names and "time_left_minutes" not in todo_columns:
+            connection.execute(
+                text("ALTER TABLE todos ADD COLUMN time_left_minutes INTEGER")
+            )
+
+        for index in workspace_indexes:
+            is_global_name_index = (
+                index["name"] == "ix_workspaces_name"
+                and index.get("unique")
+                and index.get("column_names") == ["name"]
+            )
+
+            if is_global_name_index:
+                connection.execute(text("DROP INDEX IF EXISTS ix_workspaces_name"))
+                connection.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS "
+                        "ix_workspaces_name ON workspaces (name)"
+                    )
+                )
+
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "ix_workspaces_user_id_name ON workspaces (user_id, name) "
+                "WHERE user_id IS NOT NULL"
+            )
+        )
+
+
+def ensure_default_workspaces(db: Session, current_user: models.User) -> None:
     for workspace_name in ("Home", "Work"):
         existing_workspace = (
             db.query(models.Workspace)
-            .filter(func.lower(models.Workspace.name) == workspace_name.lower())
+            .filter(
+                models.Workspace.user_id == current_user.id,
+                func.lower(models.Workspace.name) == workspace_name.lower(),
+            )
             .first()
         )
 
         if existing_workspace is None:
-            db.add(models.Workspace(name=workspace_name))
+            db.add(models.Workspace(name=workspace_name, user_id=current_user.id))
 
     db.commit()
 
@@ -145,12 +153,7 @@ def ensure_default_workspaces(db: Session) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-
-    db = SessionLocal()
-    try:
-        ensure_default_workspaces(db)
-    finally:
-        db.close()
+    add_missing_sqlite_columns()
 
     yield
 
@@ -163,10 +166,13 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
 
 
 @app.get("/")
@@ -174,79 +180,19 @@ def home():
     return {"message": "Todo API Running"}
 
 
-@app.post(
-    "/auth/register",
-    response_model=schemas.Token,
-    status_code=status.HTTP_201_CREATED,
-)
-def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    username = normalize_text(user_data.username)
-
-    if username == "":
-        raise HTTPException(status_code=400, detail="Username is required")
-
-    if len(user_data.password) < 6:
-        raise HTTPException(
-            status_code=400,
-            detail="Password must be at least 6 characters",
-        )
-
-    if get_user_by_username(db, username) is not None:
-        raise HTTPException(status_code=409, detail="Username already exists")
-
-    user = models.User(
-        username=username,
-        hashed_password=hash_password(user_data.password),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    return create_user_token(user)
-
-
-@app.post("/auth/login", response_model=schemas.Token)
-def login_user(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
-    user = authenticate_user(db, form_data.username, form_data.password)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return create_user_token(user)
-
-
-@app.post("/auth/login-json", response_model=schemas.Token)
-def login_user_json(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
-    user = authenticate_user(db, user_data.username, user_data.password)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return create_user_token(user)
-
-
-@app.get("/auth/me", response_model=schemas.UserRead)
-def read_current_user(current_user: models.User = Depends(get_current_user)):
-    return current_user
-
-
 @app.get("/workspaces", response_model=list[schemas.WorkspaceRead])
 def list_workspaces(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    return db.query(models.Workspace).order_by(models.Workspace.id).all()
+    ensure_default_workspaces(db, current_user)
+
+    return (
+        db.query(models.Workspace)
+        .filter(models.Workspace.user_id == current_user.id)
+        .order_by(models.Workspace.id)
+        .all()
+    )
 
 
 @app.post(
@@ -266,14 +212,17 @@ def create_workspace(
 
     duplicate_workspace = (
         db.query(models.Workspace)
-        .filter(func.lower(models.Workspace.name) == workspace_name.lower())
+        .filter(
+            models.Workspace.user_id == current_user.id,
+            func.lower(models.Workspace.name) == workspace_name.lower(),
+        )
         .first()
     )
 
     if duplicate_workspace is not None:
         raise HTTPException(status_code=409, detail="Workspace already exists")
 
-    workspace = models.Workspace(name=workspace_name)
+    workspace = models.Workspace(name=workspace_name, user_id=current_user.id)
     db.add(workspace)
     db.commit()
     db.refresh(workspace)
@@ -288,7 +237,7 @@ def update_workspace(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    workspace = get_workspace_or_404(db, workspace_id)
+    workspace = get_workspace_or_404(db, workspace_id, current_user)
     workspace_name = normalize_text(workspace_data.name)
 
     if workspace_name == "":
@@ -298,6 +247,7 @@ def update_workspace(
         db.query(models.Workspace)
         .filter(
             models.Workspace.id != workspace_id,
+            models.Workspace.user_id == current_user.id,
             func.lower(models.Workspace.name) == workspace_name.lower(),
         )
         .first()
@@ -319,7 +269,7 @@ def delete_workspace(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    workspace = get_workspace_or_404(db, workspace_id)
+    workspace = get_workspace_or_404(db, workspace_id, current_user)
 
     db.delete(workspace)
     db.commit()
@@ -334,7 +284,11 @@ def list_todos(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    query = db.query(models.Todo)
+    query = (
+        db.query(models.Todo)
+        .join(models.Workspace)
+        .filter(models.Workspace.user_id == current_user.id)
+    )
 
     if workspace_id is not None:
         query = query.filter(models.Todo.workspace_id == workspace_id)
@@ -360,11 +314,18 @@ def create_todo(
     if todo_title == "":
         raise HTTPException(status_code=400, detail="Todo title is required")
 
-    get_workspace_or_404(db, todo_data.workspace_id)
+    if todo_data.time_left_minutes is not None and todo_data.time_left_minutes < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Time left must be at least 1 minute",
+        )
+
+    get_workspace_or_404(db, todo_data.workspace_id, current_user)
 
     todo = models.Todo(
         title=todo_title,
         completed=todo_data.completed,
+        time_left_minutes=todo_data.time_left_minutes,
         workspace_id=todo_data.workspace_id,
     )
     db.add(todo)
@@ -381,7 +342,7 @@ def update_todo(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    todo = get_todo_or_404(db, todo_id)
+    todo = get_todo_or_404(db, todo_id, current_user)
 
     if todo_data.title is not None:
         todo_title = normalize_text(todo_data.title)
@@ -394,8 +355,17 @@ def update_todo(
     if todo_data.completed is not None:
         todo.completed = todo_data.completed
 
+    if todo_data.time_left_minutes is not None:
+        if todo_data.time_left_minutes < 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Time left must be at least 1 minute",
+            )
+
+        todo.time_left_minutes = todo_data.time_left_minutes
+
     if todo_data.workspace_id is not None:
-        get_workspace_or_404(db, todo_data.workspace_id)
+        get_workspace_or_404(db, todo_data.workspace_id, current_user)
         todo.workspace_id = todo_data.workspace_id
 
     db.commit()
@@ -410,7 +380,7 @@ def delete_todo(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    todo = get_todo_or_404(db, todo_id)
+    todo = get_todo_or_404(db, todo_id, current_user)
 
     db.delete(todo)
     db.commit()
@@ -425,7 +395,11 @@ def list_timetable_items(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    query = db.query(models.TimetableItem)
+    query = (
+        db.query(models.TimetableItem)
+        .join(models.Workspace)
+        .filter(models.Workspace.user_id == current_user.id)
+    )
 
     if workspace_id is not None:
         query = query.filter(models.TimetableItem.workspace_id == workspace_id)
@@ -456,7 +430,7 @@ def create_timetable_item(
     if item_day == "":
         raise HTTPException(status_code=400, detail="Timetable day is required")
 
-    get_workspace_or_404(db, item_data.workspace_id)
+    get_workspace_or_404(db, item_data.workspace_id, current_user)
 
     item = models.TimetableItem(
         title=item_title,
@@ -478,7 +452,7 @@ def update_timetable_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = get_timetable_item_or_404(db, item_id)
+    item = get_timetable_item_or_404(db, item_id, current_user)
 
     if item_data.title is not None:
         item_title = normalize_text(item_data.title)
@@ -500,7 +474,7 @@ def update_timetable_item(
         item.time = normalize_text(item_data.time)
 
     if item_data.workspace_id is not None:
-        get_workspace_or_404(db, item_data.workspace_id)
+        get_workspace_or_404(db, item_data.workspace_id, current_user)
         item.workspace_id = item_data.workspace_id
 
     db.commit()
@@ -515,7 +489,7 @@ def delete_timetable_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = get_timetable_item_or_404(db, item_id)
+    item = get_timetable_item_or_404(db, item_id, current_user)
 
     db.delete(item)
     db.commit()

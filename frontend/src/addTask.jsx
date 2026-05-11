@@ -2,10 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import Navbar from "./navbar";
 import Sidebar from "./sidebar";
 import Settings from "./settings";
+import { apiRequest } from "./api";
 import "./addTask.css";
 
 
-function ToDoList(){
+function mapTask(task){
+  return {
+    id: task.id,
+    title: task.title,
+    completed: task.completed,
+    timeLeftMinutes: task.time_left_minutes,
+    workspaceId: task.workspace_id,
+  };
+}
+
+function mapTimetableItem(item){
+  return {
+    id: item.id,
+    title: item.title,
+    time: item.time || "",
+    day: item.day,
+    workspaceId: item.workspace_id,
+  };
+}
+
+
+function ToDoList({ authToken, onLogout, passwordLength }){
 
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("")
@@ -13,6 +35,10 @@ function ToDoList(){
   const [timetableItems, setTimetableItems] = useState([]);
   const [newTimetableTime, setNewTimetableTime] = useState("");
   const [newTimetableTitle, setNewTimetableTitle] = useState("");
+  const [isTimetableFormOpen, setIsTimetableFormOpen] = useState(false);
+  const [isTimedTaskFormOpen, setIsTimedTaskFormOpen] = useState(false);
+  const [newTimedTaskTitle, setNewTimedTaskTitle] = useState("");
+  const [newTimedTaskMinutes, setNewTimedTaskMinutes] = useState("");
   const [activeTimetableDay, setActiveTimetableDay] = useState("mon");
   const [currentPage, setCurrentPage] = useState("workspaces");
   const [previousPage, setPreviousPage] = useState("workspaces");
@@ -21,16 +47,18 @@ function ToDoList(){
 
     return savedTheme === "light" ? "light" : "dark";
   });
-  const [workspaces, setWorkspaces] = useState([
-    { id: "home", name: "Home" },
-    { id: "work", name: "Work" },
-  ]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState("home");
+  const [workspaces, setWorkspaces] = useState([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(null);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [dataError, setDataError] = useState("");
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const workspaceInputRef = useRef(null);
+  const timetableTitleRef = useRef(null);
+  const timedTaskTitleRef = useRef(null);
   const timetableDays = [
     { id: "sun", label: "S" },
     { id: "mon", label: "M" },
@@ -54,6 +82,54 @@ function ToDoList(){
     localStorage.setItem("taskboard-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    let ignoreResponse = false;
+
+    async function loadBoardData(){
+      try {
+        setIsLoadingData(true);
+        setDataError("");
+
+        const [userData, workspaceData, taskData, timetableData] = await Promise.all([
+          apiRequest("/auth/me", {}, authToken),
+          apiRequest("/workspaces", {}, authToken),
+          apiRequest("/todos", {}, authToken),
+          apiRequest("/timetable-items", {}, authToken),
+        ]);
+
+        if (ignoreResponse) return;
+
+        setCurrentUser(userData);
+        setWorkspaces(workspaceData);
+        setTasks(taskData.map(mapTask));
+        setTimetableItems(timetableData.map(mapTimetableItem));
+        setActiveWorkspaceId((currentWorkspaceId) => {
+          const currentWorkspaceExists = workspaceData.some((workspace) =>
+            workspace.id === currentWorkspaceId
+          );
+
+          return currentWorkspaceExists ? currentWorkspaceId : workspaceData[0]?.id || null;
+        });
+      } catch (error) {
+        if (!ignoreResponse) {
+          setDataError(error.message);
+        }
+      } finally {
+        if (!ignoreResponse) {
+          setIsLoadingData(false);
+        }
+      }
+    }
+
+    if (authToken) {
+      loadBoardData();
+    }
+
+    return () => {
+      ignoreResponse = true;
+    };
+  }, [authToken]);
+
   function getWorkspaceProgress(workspaceId){
     const workspaceTaskList = tasks.filter((task) => task.workspaceId === workspaceId);
     const completedTaskList = workspaceTaskList.filter((task) => task.completed);
@@ -76,52 +152,152 @@ function ToDoList(){
     }
   }
 
-  function addTask(){
+  async function addTask(){
     if (newTask.trim()!==""){
-      const task = {
-        id: Date.now(),
-        title: newTask.trim(),
-        completed: false,
-        workspaceId: activeWorkspaceId,
-      };
+      if (activeWorkspaceId === null) return;
 
-      setTasks(t=>[...t, task]);
-      setNewTask("");
-      setActiveView("pending");
+      try {
+        setDataError("");
+        const task = await apiRequest("/todos", {
+          method: "POST",
+          body: {
+            title: newTask.trim(),
+            completed: false,
+            workspace_id: activeWorkspaceId,
+          },
+        }, authToken);
+
+        setTasks(t=>[...t, mapTask(task)]);
+        setNewTask("");
+        setActiveView("pending");
+      } catch (error) {
+        setDataError(error.message);
+      }
     }
    
   }
 
-  function removeTask(id){
-    setTasks(tasks.filter((task) => task.id !== id));
+  async function addTimedTask(){
+    const taskTitle = newTimedTaskTitle.trim();
+    const timeLeft = Number(newTimedTaskMinutes);
+
+    if (taskTitle === "") return;
+    if (activeWorkspaceId === null) return;
+    if (!Number.isInteger(timeLeft) || timeLeft < 1) {
+      setDataError("Time left must be at least 1 minute");
+      return;
+    }
+
+    try {
+      setDataError("");
+      const task = await apiRequest("/todos", {
+        method: "POST",
+        body: {
+          title: taskTitle,
+          completed: false,
+          time_left_minutes: timeLeft,
+          workspace_id: activeWorkspaceId,
+        },
+      }, authToken);
+
+      setTasks(t=>[...t, mapTask(task)]);
+      setNewTimedTaskTitle("");
+      setNewTimedTaskMinutes("");
+      setIsTimedTaskFormOpen(false);
+      setActiveView("pending");
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
-  function moveToCompleted(id){
-    setTasks(tasks.map((task) =>
-      task.id === id ? { ...task, completed: true } : task
-    ));
+  function openTimedTaskForm(){
+    setIsTimedTaskFormOpen(true);
+    setTimeout(() => timedTaskTitleRef.current?.focus(), 0);
   }
 
-  function moveToPending(id){
-    setTasks(tasks.map((task) =>
-      task.id === id ? { ...task, completed: false } : task
-    ));
+  function closeTimedTaskForm(){
+    setIsTimedTaskFormOpen(false);
+    setNewTimedTaskTitle("");
+    setNewTimedTaskMinutes("");
   }
 
-  function addTimetableItem(){
+  function handleTimedTaskKeyDown(event){
+    if(event.key==="Enter"){
+      addTimedTask();
+    }
+  }
+
+  function handleTimedTaskDialogKeyDown(event){
+    if(event.key==="Escape"){
+      closeTimedTaskForm();
+    }
+  }
+
+  async function removeTask(id){
+    try {
+      setDataError("");
+      await apiRequest(`/todos/${id}`, { method: "DELETE" }, authToken);
+      setTasks(tasks.filter((task) => task.id !== id));
+    } catch (error) {
+      setDataError(error.message);
+    }
+  }
+
+  async function moveToCompleted(id){
+    try {
+      setDataError("");
+      const updatedTask = await apiRequest(`/todos/${id}`, {
+        method: "PATCH",
+        body: { completed: true },
+      }, authToken);
+
+      setTasks(tasks.map((task) =>
+        task.id === id ? mapTask(updatedTask) : task
+      ));
+    } catch (error) {
+      setDataError(error.message);
+    }
+  }
+
+  async function moveToPending(id){
+    try {
+      setDataError("");
+      const updatedTask = await apiRequest(`/todos/${id}`, {
+        method: "PATCH",
+        body: { completed: false },
+      }, authToken);
+
+      setTasks(tasks.map((task) =>
+        task.id === id ? mapTask(updatedTask) : task
+      ));
+    } catch (error) {
+      setDataError(error.message);
+    }
+  }
+
+  async function addTimetableItem(){
     if (newTimetableTitle.trim() === "") return;
+    if (activeWorkspaceId === null) return;
 
-    const timetableItem = {
-      id: Date.now(),
-        title: newTimetableTitle.trim(),
-        time: newTimetableTime,
-        day: activeTimetableDay,
-        workspaceId: activeWorkspaceId,
-      };
+    try {
+      setDataError("");
+      const timetableItem = await apiRequest("/timetable-items", {
+        method: "POST",
+        body: {
+          title: newTimetableTitle.trim(),
+          time: newTimetableTime,
+          day: activeTimetableDay,
+          workspace_id: activeWorkspaceId,
+        },
+      }, authToken);
 
-    setTimetableItems([...timetableItems, timetableItem]);
-    setNewTimetableTitle("");
-    setNewTimetableTime("");
+      setTimetableItems([...timetableItems, mapTimetableItem(timetableItem)]);
+      setNewTimetableTitle("");
+      setNewTimetableTime("");
+      setIsTimetableFormOpen(false);
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
   function handleTimetableKeyDown(event){
@@ -130,8 +306,31 @@ function ToDoList(){
     }
   }
 
-  function removeTimetableItem(id){
-    setTimetableItems(timetableItems.filter((item) => item.id !== id));
+  function openTimetableForm(){
+    setIsTimetableFormOpen(true);
+    setTimeout(() => timetableTitleRef.current?.focus(), 0);
+  }
+
+  function closeTimetableForm(){
+    setIsTimetableFormOpen(false);
+    setNewTimetableTitle("");
+    setNewTimetableTime("");
+  }
+
+  function handleTimetableDialogKeyDown(event){
+    if(event.key==="Escape"){
+      closeTimetableForm();
+    }
+  }
+
+  async function removeTimetableItem(id){
+    try {
+      setDataError("");
+      await apiRequest(`/timetable-items/${id}`, { method: "DELETE" }, authToken);
+      setTimetableItems(timetableItems.filter((item) => item.id !== id));
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
   function formatTimetableTime(time){
@@ -145,7 +344,19 @@ function ToDoList(){
     return `${displayHour}:${minute} ${period}`;
   }
 
-  function addWorkspace(){
+  function formatTimeLeft(minutes){
+    if (!minutes) return "";
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (hours === 0) return `${remainingMinutes}m left`;
+    if (remainingMinutes === 0) return `${hours}h left`;
+
+    return `${hours}h ${remainingMinutes}m left`;
+  }
+
+  async function addWorkspace(){
     const workspaceName = newWorkspaceName.trim();
 
     if (workspaceName === "") return;
@@ -162,16 +373,21 @@ function ToDoList(){
       return;
     }
 
-    const workspace = {
-      id: Date.now().toString(),
-      name: workspaceName,
-    };
+    try {
+      setDataError("");
+      const workspace = await apiRequest("/workspaces", {
+        method: "POST",
+        body: { name: workspaceName },
+      }, authToken);
 
-    setWorkspaces([...workspaces, workspace]);
-    setActiveWorkspaceId(workspace.id);
-    setActiveView("pending");
-    setCurrentPage("workspace");
-    setNewWorkspaceName("");
+      setWorkspaces([...workspaces, workspace]);
+      setActiveWorkspaceId(workspace.id);
+      setActiveView("pending");
+      setCurrentPage("workspace");
+      setNewWorkspaceName("");
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
   function handleWorkspaceKeyDown(event){
@@ -233,7 +449,7 @@ function ToDoList(){
     setEditingWorkspaceName("");
   }
 
-  function saveWorkspaceRename(workspaceId){
+  async function saveWorkspaceRename(workspaceId){
     const workspaceName = editingWorkspaceName.trim();
 
     if (workspaceName === "") return;
@@ -245,10 +461,20 @@ function ToDoList(){
 
     if (duplicateWorkspace) return;
 
-    setWorkspaces(workspaces.map((workspace) =>
-      workspace.id === workspaceId ? { ...workspace, name: workspaceName } : workspace
-    ));
-    cancelWorkspaceRename();
+    try {
+      setDataError("");
+      const updatedWorkspace = await apiRequest(`/workspaces/${workspaceId}`, {
+        method: "PATCH",
+        body: { name: workspaceName },
+      }, authToken);
+
+      setWorkspaces(workspaces.map((workspace) =>
+        workspace.id === workspaceId ? updatedWorkspace : workspace
+      ));
+      cancelWorkspaceRename();
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
   function handleWorkspaceRenameKeyDown(event, workspaceId){
@@ -265,24 +491,124 @@ function ToDoList(){
     setOpenWorkspaceMenuId(openWorkspaceMenuId === workspaceId ? null : workspaceId);
   }
 
-  function deleteWorkspace(workspaceId){
+  async function deleteWorkspace(workspaceId){
     if (workspaces.length <= 1) return;
 
-    const remainingWorkspaces = workspaces.filter((workspace) => workspace.id !== workspaceId);
+    try {
+      setDataError("");
+      await apiRequest(`/workspaces/${workspaceId}`, { method: "DELETE" }, authToken);
 
-    setWorkspaces(remainingWorkspaces);
-    setTasks(tasks.filter((task) => task.workspaceId !== workspaceId));
-    setTimetableItems(timetableItems.filter((item) => item.workspaceId !== workspaceId));
-    setOpenWorkspaceMenuId(null);
+      const remainingWorkspaces = workspaces.filter((workspace) => workspace.id !== workspaceId);
 
-    if (editingWorkspaceId === workspaceId) {
-      cancelWorkspaceRename();
+      setWorkspaces(remainingWorkspaces);
+      setTasks(tasks.filter((task) => task.workspaceId !== workspaceId));
+      setTimetableItems(timetableItems.filter((item) => item.workspaceId !== workspaceId));
+      setOpenWorkspaceMenuId(null);
+
+      if (editingWorkspaceId === workspaceId) {
+        cancelWorkspaceRename();
+      }
+
+      if (activeWorkspaceId === workspaceId) {
+        setActiveWorkspaceId(remainingWorkspaces[0].id);
+        setActiveView("pending");
+      }
+    } catch (error) {
+      setDataError(error.message);
     }
+  }
 
-    if (activeWorkspaceId === workspaceId) {
-      setActiveWorkspaceId(remainingWorkspaces[0].id);
-      setActiveView("pending");
-    }
+  function renderTimetableSection(isPopup = false){
+    return (
+      <section
+        className={
+          isPopup
+            ? "timetable-section timetable-section-popup"
+            : "timetable-section"
+        }
+        onClick={isPopup ? (event) => event.stopPropagation() : undefined}
+      >
+        <div className="timetable-header">
+          <div>
+            <h2>Timetable</h2>
+            <p>You have {workspaceTimetable.length} items Today</p>
+          </div>
+          <div className="timetable-actions">
+            <button
+              className="timetable-reset"
+              onClick={() => setActiveTimetableDay("mon")}
+              type="button"
+            >
+              Reset
+            </button>
+            {isPopup && (
+              <button
+                aria-label="Close timetable"
+                className="timetable-close"
+                onClick={closeTimetableForm}
+                type="button"
+              >
+                x
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="timetable-days">
+          {timetableDays.map((day) => (
+            <button
+              className={activeTimetableDay === day.id ? "active" : ""}
+              key={day.id}
+              onClick={() => setActiveTimetableDay(day.id)}
+              type="button"
+            >
+              {day.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="timetable-form">
+          <input
+            type="time"
+            value={newTimetableTime}
+            onChange={(event) => setNewTimetableTime(event.target.value)}
+          />
+          <input
+            ref={timetableTitleRef}
+            type="text"
+            placeholder="Add timetable item..."
+            value={newTimetableTitle}
+            onChange={(event) => setNewTimetableTitle(event.target.value)}
+            onKeyDown={handleTimetableKeyDown}
+          />
+          <button type="button" onClick={addTimetableItem}>
+            Add
+          </button>
+        </div>
+
+        {workspaceTimetable.length === 0 ? (
+          <p className="empty">No timetable items found</p>
+        ) : (
+          <div className="timetable-list">
+            {workspaceTimetable.map((item) => (
+              <div className="timetable-item" key={item.id}>
+                <div className="timetable-time">
+                  <span className="timetable-dot" />
+                  <time>{formatTimetableTime(item.time)}</time>
+                </div>
+                <div className="timetable-card">
+                  <strong>{item.title}</strong>
+                  <span>{activeWorkspace?.name} schedule</span>
+                  <button type="button" onClick={() => removeTimetableItem(item.id)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    );
   }
 
   return(
@@ -306,12 +632,20 @@ function ToDoList(){
         onAddWorkspaceClick={focusWorkspaceInput}
         onSettingsClick={openSettings}
       />
+      {dataError && <p className="empty">{dataError}</p>}
+      {isLoadingData ? (
+        <p className="empty">Loading your board...</p>
+      ) : (
+      <>
     
   
       {currentPage === "settings" ? (
         <Settings
           onBack={closeSettings}
           onThemeToggle={toggleTheme}
+          onLogout={onLogout}
+          passwordLength={passwordLength}
+          user={currentUser}
           theme={theme}
           totalTasks={tasks.length}
           totalWorkspaces={workspaces.length}
@@ -350,7 +684,14 @@ function ToDoList(){
                 <ol>
                   {pendingTasks.map((task)=>
                     <li key={task.id}>
-                      <span className="text">{task.title}</span>
+                      <span className="task-copy">
+                        <span className="text">{task.title}</span>
+                        {task.timeLeftMinutes && (
+                          <span className="time-left">
+                            {formatTimeLeft(task.timeLeftMinutes)}
+                          </span>
+                        )}
+                      </span>
                       <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
                       <button className="completed-button" onClick={()=> moveToCompleted(task.id)}>Completed</button>
                     </li>
@@ -363,7 +704,14 @@ function ToDoList(){
               <ol>
                 {completedTasks.map((task)=>
                   <li key={task.id} className="done">
-                    <span className="text">{task.title}</span>
+                    <span className="task-copy">
+                      <span className="text">{task.title}</span>
+                      {task.timeLeftMinutes && (
+                        <span className="time-left">
+                          {formatTimeLeft(task.timeLeftMinutes)}
+                        </span>
+                      )}
+                    </span>
                     <button className="delete-task" onClick={()=> removeTask(task.id)}>Delete</button>
                     <button className="completed-button" onClick={()=> moveToPending(task.id)}>Pending</button>
                   </li>
@@ -372,74 +720,90 @@ function ToDoList(){
             )}
           </section>
 
-          <section className="timetable-section">
-            <div className="timetable-header">
-              <div>
-                <h2>Timetable</h2>
-                <p>You have {workspaceTimetable.length} items Today</p>
-              </div>
+          <div className="workspace-tool-actions">
+            {workspaceTimetable.length === 0 && (
               <button
-                className="timetable-reset"
-                onClick={() => setActiveTimetableDay("mon")}
+                className="timetable-open-button"
+                onClick={openTimetableForm}
                 type="button"
               >
-                Reset
+                Add a Timetable
               </button>
-            </div>
-
-            <div className="timetable-days">
-              {timetableDays.map((day) => (
-                <button
-                  className={activeTimetableDay === day.id ? "active" : ""}
-                  key={day.id}
-                  onClick={() => setActiveTimetableDay(day.id)}
-                  type="button"
-                >
-                  {day.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="timetable-form">
-              <input
-                type="time"
-                value={newTimetableTime}
-                onChange={(event) => setNewTimetableTime(event.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Add timetable item..."
-                value={newTimetableTitle}
-                onChange={(event) => setNewTimetableTitle(event.target.value)}
-                onKeyDown={handleTimetableKeyDown}
-              />
-              <button type="button" onClick={addTimetableItem}>
-                Add
-              </button>
-            </div>
-
-            {workspaceTimetable.length === 0 ? (
-              <p className="empty">No timetable items found</p>
-            ) : (
-              <div className="timetable-list">
-                {workspaceTimetable.map((item) => (
-                  <div className="timetable-item" key={item.id}>
-                    <div className="timetable-time">
-                      <span className="timetable-dot" />
-                      <time>{formatTimetableTime(item.time)}</time>
-                    </div>
-                    <div className="timetable-card">
-                      <strong>{item.title}</strong>
-                      <span>{activeWorkspace?.name} schedule</span>
-                      <button type="button" onClick={() => removeTimetableItem(item.id)}>
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             )}
-          </section>
+            <button
+              className="timed-task-open-button"
+              onClick={openTimedTaskForm}
+              type="button"
+            >
+              Add Timed Tasks
+            </button>
+          </div>
+
+          {workspaceTimetable.length > 0 && renderTimetableSection()}
+
+          {isTimetableFormOpen && (
+            <div
+              aria-modal="true"
+              className="timetable-modal"
+              onClick={closeTimetableForm}
+              onKeyDown={handleTimetableDialogKeyDown}
+              role="dialog"
+            >
+              {renderTimetableSection(true)}
+            </div>
+          )}
+
+          {isTimedTaskFormOpen && (
+            <div
+              aria-modal="true"
+              className="timed-task-modal"
+              onClick={closeTimedTaskForm}
+              onKeyDown={handleTimedTaskDialogKeyDown}
+              role="dialog"
+            >
+              <section
+                className="timed-task-panel"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="timed-task-header">
+                  <div>
+                    <h2>Add Timed Task</h2>
+                    <p>{activeWorkspace?.name}</p>
+                  </div>
+                  <button
+                    aria-label="Close timed task form"
+                    className="timed-task-close"
+                    onClick={closeTimedTaskForm}
+                    type="button"
+                  >
+                    x
+                  </button>
+                </div>
+
+                <div className="timed-task-form">
+                  <input
+                    ref={timedTaskTitleRef}
+                    type="text"
+                    placeholder="Task name..."
+                    value={newTimedTaskTitle}
+                    onChange={(event) => setNewTimedTaskTitle(event.target.value)}
+                    onKeyDown={handleTimedTaskKeyDown}
+                  />
+                  <input
+                    min="1"
+                    type="number"
+                    placeholder="Minutes left"
+                    value={newTimedTaskMinutes}
+                    onChange={(event) => setNewTimedTaskMinutes(event.target.value)}
+                    onKeyDown={handleTimedTaskKeyDown}
+                  />
+                  <button type="button" onClick={addTimedTask}>
+                    Add
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
         </>
       ) : (
         <section className="workspace-section workspace-section-main">
@@ -548,6 +912,8 @@ function ToDoList(){
       )}
 
       
+      </>
+      )}
 
     </main>
   </div>)
