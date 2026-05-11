@@ -1049,12 +1049,12 @@ select:focus-visible {
 }
 
 .timed-task-open-button {
-  background: #16806a;
+  background: #1a73e8;
   box-shadow: 0 12px 24px rgba(22, 128, 106, 0.22);
 }
 
 .timed-task-open-button:hover {
-  background: #126f5c;
+  background: #155fc2;
 }
 
 .timetable-add-trigger {
@@ -1263,7 +1263,7 @@ select:focus-visible {
 
 .timed-task-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px auto;
+  grid-template-columns: minmax(0, 1fr) 110px 110px auto;
   gap: 8px;
   padding: 10px;
   border: 1px solid #dbe3ec;
@@ -1810,6 +1810,16 @@ select:focus-visible {
   color: #7f8da3;
 }
 
+:root[data-theme="dark"] .time-left {
+  color: #9dc8ff;
+  background: #172231;
+}
+
+:root[data-theme="dark"] .done .time-left {
+  color: #7f8da3;
+  background: #1c2633;
+}
+
 :root[data-theme="dark"] .empty {
   border-color: #263446;
   background: rgba(20, 27, 36, 0.72);
@@ -1839,6 +1849,15 @@ select:focus-visible {
 :root[data-theme="dark"] .timetable-open-button:hover,
 :root[data-theme="dark"] .timetable-add-trigger:hover {
   background: #3c6fa1;
+}
+
+:root[data-theme="dark"] .timed-task-open-button {
+  color: #d8fff4;
+  background: #16806a;
+}
+
+:root[data-theme="dark"] .timed-task-open-button:hover {
+  background: #1b927a;
 }
 
 :root[data-theme="dark"] .timetable-reset {
@@ -1888,6 +1907,53 @@ select:focus-visible {
 
 :root[data-theme="dark"] .timetable-modal {
   background: rgba(3, 7, 18, 0.62);
+}
+
+:root[data-theme="dark"] .timed-task-modal {
+  background: rgba(3, 7, 18, 0.62);
+}
+
+:root[data-theme="dark"] .timed-task-panel,
+:root[data-theme="dark"] .timed-task-form {
+  border-color: rgba(157, 200, 255, 0.16);
+  background: #10151c;
+}
+
+:root[data-theme="dark"] .timed-task-header h2 {
+  color: #eef3fb;
+}
+
+:root[data-theme="dark"] .timed-task-header p {
+  color: #aeb8c9;
+}
+
+:root[data-theme="dark"] .timed-task-close {
+  color: #d9eaff;
+  background: #172231;
+}
+
+:root[data-theme="dark"] .timed-task-close:hover {
+  background: #213149;
+}
+
+:root[data-theme="dark"] .timed-task-form input {
+  border-color: #263446;
+  color: #e8edf7;
+  background: #10151c;
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .timed-task-form input::placeholder {
+  color: #6f7d90;
+}
+
+:root[data-theme="dark"] .timed-task-form input:focus {
+  border-color: #79b7ff;
+  box-shadow: 0 0 0 4px rgba(121, 183, 255, 0.16);
+}
+
+:root[data-theme="dark"] .timed-task-form button {
+  background: #16806a;
 }
 
 :root[data-theme="dark"] .timetable-modal-header h3 {
@@ -1974,6 +2040,15 @@ select:focus-visible {
   background: #155fc2;
 }
 
+:root[data-theme="light"] .timed-task-open-button {
+  color: #ffffff;
+  background: #16806a;
+}
+
+:root[data-theme="light"] .timed-task-open-button:hover {
+  background: #126f5c;
+}
+
 :root[data-theme="light"] .timetable-reset {
   color: #155fc2;
   background: #e8f1ff;
@@ -2021,6 +2096,53 @@ select:focus-visible {
 
 :root[data-theme="light"] .timetable-modal {
   background: rgba(15, 23, 42, 0.42);
+}
+
+:root[data-theme="light"] .timed-task-modal {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+:root[data-theme="light"] .timed-task-panel,
+:root[data-theme="light"] .timed-task-form {
+  border-color: #dbe3ec;
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .timed-task-header h2 {
+  color: #121926;
+}
+
+:root[data-theme="light"] .timed-task-header p {
+  color: #697586;
+}
+
+:root[data-theme="light"] .timed-task-close {
+  color: #526071;
+  background: #eef2f7;
+}
+
+:root[data-theme="light"] .timed-task-close:hover {
+  color: #121926;
+  background: #e1e7ef;
+}
+
+:root[data-theme="light"] .timed-task-form input {
+  border-color: #cbd5e1;
+  color: #111827;
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .timed-task-form input::placeholder {
+  color: #8a95a5;
+}
+
+:root[data-theme="light"] .timed-task-form input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+}
+
+:root[data-theme="light"] .timed-task-form button {
+  background: #16806a;
 }
 
 :root[data-theme="light"] .timetable-modal-header h3 {
@@ -2185,6 +2307,7 @@ select:focus-visible {
   .to-do-list > div:first-of-type,
   .to-do-list li,
   .timetable-form,
+  .timed-task-form,
   .timetable-item {
     grid-template-columns: 1fr;
   }
@@ -2198,6 +2321,8 @@ select:focus-visible {
   .moveup-task,
   .movedown-task,
   .add-button,
+  .timetable-open-button,
+  .timed-task-open-button,
   .status-select {
     width: 100%;
   }

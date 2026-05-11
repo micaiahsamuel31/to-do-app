@@ -38,6 +38,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   const [isTimetableFormOpen, setIsTimetableFormOpen] = useState(false);
   const [isTimedTaskFormOpen, setIsTimedTaskFormOpen] = useState(false);
   const [newTimedTaskTitle, setNewTimedTaskTitle] = useState("");
+  const [newTimedTaskHours, setNewTimedTaskHours] = useState("");
   const [newTimedTaskMinutes, setNewTimedTaskMinutes] = useState("");
   const [activeTimetableDay, setActiveTimetableDay] = useState("mon");
   const [currentPage, setCurrentPage] = useState("workspaces");
@@ -179,11 +180,20 @@ function ToDoList({ authToken, onLogout, passwordLength }){
 
   async function addTimedTask(){
     const taskTitle = newTimedTaskTitle.trim();
-    const timeLeft = Number(newTimedTaskMinutes);
+    const hours = newTimedTaskHours === "" ? 0 : Number(newTimedTaskHours);
+    const minutes = newTimedTaskMinutes === "" ? 0 : Number(newTimedTaskMinutes);
+    const timeLeft = (hours * 60) + minutes;
 
     if (taskTitle === "") return;
     if (activeWorkspaceId === null) return;
-    if (!Number.isInteger(timeLeft) || timeLeft < 1) {
+    if (
+      !Number.isInteger(hours) ||
+      !Number.isInteger(minutes) ||
+      hours < 0 ||
+      minutes < 0 ||
+      minutes > 59 ||
+      timeLeft < 1
+    ) {
       setDataError("Time left must be at least 1 minute");
       return;
     }
@@ -202,6 +212,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
 
       setTasks(t=>[...t, mapTask(task)]);
       setNewTimedTaskTitle("");
+      setNewTimedTaskHours("");
       setNewTimedTaskMinutes("");
       setIsTimedTaskFormOpen(false);
       setActiveView("pending");
@@ -218,6 +229,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   function closeTimedTaskForm(){
     setIsTimedTaskFormOpen(false);
     setNewTimedTaskTitle("");
+    setNewTimedTaskHours("");
     setNewTimedTaskMinutes("");
   }
 
@@ -790,9 +802,18 @@ function ToDoList({ authToken, onLogout, passwordLength }){
                     onKeyDown={handleTimedTaskKeyDown}
                   />
                   <input
-                    min="1"
+                    min="0"
                     type="number"
-                    placeholder="Minutes left"
+                    placeholder="Hours"
+                    value={newTimedTaskHours}
+                    onChange={(event) => setNewTimedTaskHours(event.target.value)}
+                    onKeyDown={handleTimedTaskKeyDown}
+                  />
+                  <input
+                    max="59"
+                    min="0"
+                    type="number"
+                    placeholder="Minutes"
                     value={newTimedTaskMinutes}
                     onChange={(event) => setNewTimedTaskMinutes(event.target.value)}
                     onKeyDown={handleTimedTaskKeyDown}
