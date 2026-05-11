@@ -1,14 +1,15 @@
-function Navbar({ pendingCount, completedCount }) {
+function Navbar({ workspaceName, onAddWorkspaceClick }) {
   return (
     <nav className="navbar">
-      <div className="navbar-brand">
-        <span className="brand-mark">T</span>
-        <span>TaskBoard</span>
+      <div className="navbar-title">
+        <span>Workspace</span>
+        <strong>{workspaceName}</strong>
       </div>
 
-      <div className="navbar-stats">
-        <span>{pendingCount} Pending</span>
-        <span>{completedCount} Completed</span>
+      <div className="navbar-actions">
+        <button type="button" onClick={onAddWorkspaceClick}>
+          Add a Workspace
+        </button>
       </div>
     </nav>
   );
