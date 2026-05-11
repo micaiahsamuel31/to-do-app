@@ -82,6 +82,28 @@ function ToDoList({ authToken, onLogout, passwordLength }){
     document.body.dataset.theme = theme;
     localStorage.setItem("taskboard-theme", theme);
   }, [theme]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasks((currentTasks) =>
+        currentTasks.map((task) => {
+          if (
+            task.completed ||
+            task.timeLeftMinutes == null ||
+            task.timeLeftMinutes <= 0
+          ) {
+            return task;
+          }
+
+          return {
+            ...task,
+            timeLeftMinutes: task.timeLeftMinutes - 1,
+          };
+        })
+      );
+    }, 60000); // every 1 minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let ignoreResponse = false;
@@ -357,7 +379,9 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   }
 
   function formatTimeLeft(minutes){
-    if (!minutes) return "";
+    if (minutes == null) return "";
+
+    if (minutes <= 0) return "Time's up";
 
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
