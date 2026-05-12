@@ -1,15 +1,16 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./todo.db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL is None:
+    raise RuntimeError("DATABASE_URL is required. Add it to backend/.env.")
 
 connect_args = {}
 

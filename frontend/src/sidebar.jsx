@@ -17,9 +17,9 @@ function Sidebar({
   return (
     <aside className={isOpen ? "sidebar open" : "sidebar"}>
       <div className="sidebar-brand">
-        <span className="sidebar-mark">T</span>
+        <span className="sidebar-mark">M</span>
         <div>
-          <strong>TaskBoard</strong>
+          <strong>Mend</strong>
           <span>Daily tasks</span>
         </div>
         <button

@@ -79,6 +79,9 @@ def get_timetable_item_or_404(
 
 
 def add_missing_sqlite_columns() -> None:
+    if engine.dialect.name != "sqlite":
+        return
+
     inspector = inspect(engine)
 
     table_names = inspector.get_table_names()
