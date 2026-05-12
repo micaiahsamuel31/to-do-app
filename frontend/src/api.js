@@ -27,7 +27,7 @@ export async function apiRequest(path, options = {}, token) {
 
   for (const apiUrl of apiUrls) {
     try {
-      response = await fetch(`${apiUrl}${path}`, {
+      response = await fetch(`${apiUrl}/${path.replace(/^\//, '')}`, {
         ...options,
         body,
         headers,
