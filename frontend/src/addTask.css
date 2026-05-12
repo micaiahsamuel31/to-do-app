@@ -51,6 +51,12 @@ select:focus-visible {
   padding: 24px clamp(16px, 4vw, 44px) 36px 24px;
 }
 
+.sidebar-toggle,
+.sidebar-close,
+.sidebar-overlay {
+  display: none;
+}
+
 .sidebar {
   position: sticky;
   top: 24px;
@@ -72,6 +78,17 @@ select:focus-visible {
   gap: 12px;
   padding-bottom: 18px;
   border-bottom: 1px solid #e1e7ef;
+}
+
+.sidebar-close {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #526071;
+  font-size: 1rem;
+  font-weight: 900;
+  background: #eef2f7;
 }
 
 .sidebar-brand div {
@@ -107,6 +124,11 @@ select:focus-visible {
   display: grid;
   gap: 8px;
   margin-top: 20px;
+}
+
+.sidebar-mobile-section,
+.sidebar-settings-link {
+  display: none;
 }
 
 .sidebar-link {
@@ -496,9 +518,17 @@ select:focus-visible {
   border-bottom: 1px solid rgba(15, 23, 42, 0.12);
 }
 
+.navbar-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .navbar-title {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .navbar-title span {
@@ -511,6 +541,7 @@ select:focus-visible {
   color: #121926;
   font-size: 1.1rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .navbar-actions {
@@ -1050,7 +1081,7 @@ select:focus-visible {
 
 .timed-task-open-button {
   background: #1a73e8;
-  box-shadow: 0 12px 24px rgba(22, 128, 106, 0.22);
+  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.24);
 }
 
 .timed-task-open-button:hover {
@@ -1692,6 +1723,7 @@ select:focus-visible {
 :root[data-theme="dark"] .workspace-button,
 :root[data-theme="dark"] .workspace-button.active,
 :root[data-theme="dark"] .workspace-menu-button,
+:root[data-theme="dark"] .sidebar-close,
 :root[data-theme="dark"] .back-button {
   color: #e8edf7;
 }
@@ -1703,12 +1735,14 @@ select:focus-visible {
 
 :root[data-theme="dark"] .workspace-menu-button,
 :root[data-theme="dark"] .back-button,
+:root[data-theme="dark"] .sidebar-close,
 :root[data-theme="dark"] .workspace-rename-row button:last-child {
   background: #1c2633;
 }
 
 :root[data-theme="dark"] .workspace-menu-button:hover,
 :root[data-theme="dark"] .back-button:hover,
+:root[data-theme="dark"] .sidebar-close:hover,
 :root[data-theme="dark"] .workspace-rename-row button:last-child:hover {
   background: #263446;
 }
@@ -1721,6 +1755,23 @@ select:focus-visible {
 
 :root[data-theme="dark"] .workspace-menu button {
   color: #c6d0de;
+}
+
+:root[data-theme="dark"] .sidebar-workspace-link,
+:root[data-theme="dark"] .sidebar-settings-link {
+  color: #c6d0de;
+  background: #151c25;
+}
+
+:root[data-theme="dark"] .sidebar-workspace-link:hover,
+:root[data-theme="dark"] .sidebar-settings-link:hover {
+  color: #ffffff;
+  background: #1f2b3a;
+}
+
+:root[data-theme="dark"] .sidebar-workspace-link.active {
+  color: #d9eaff;
+  background: #315b86;
 }
 
 :root[data-theme="dark"] .workspace-menu button:hover {
@@ -1852,12 +1903,12 @@ select:focus-visible {
 }
 
 :root[data-theme="dark"] .timed-task-open-button {
-  color: #d8fff4;
-  background: #16806a;
+  color: #d9eaff;
+  background: #315b86;
 }
 
 :root[data-theme="dark"] .timed-task-open-button:hover {
-  background: #1b927a;
+  background: #3c6fa1;
 }
 
 :root[data-theme="dark"] .timetable-reset {
@@ -1953,7 +2004,7 @@ select:focus-visible {
 }
 
 :root[data-theme="dark"] .timed-task-form button {
-  background: #16806a;
+  background: #315b86;
 }
 
 :root[data-theme="dark"] .timetable-modal-header h3 {
@@ -2042,11 +2093,11 @@ select:focus-visible {
 
 :root[data-theme="light"] .timed-task-open-button {
   color: #ffffff;
-  background: #16806a;
+  background: #1a73e8;
 }
 
 :root[data-theme="light"] .timed-task-open-button:hover {
-  background: #126f5c;
+  background: #155fc2;
 }
 
 :root[data-theme="light"] .timetable-reset {
@@ -2142,7 +2193,7 @@ select:focus-visible {
 }
 
 :root[data-theme="light"] .timed-task-form button {
-  background: #16806a;
+  background: #1a73e8;
 }
 
 :root[data-theme="light"] .timetable-modal-header h3 {
@@ -2205,47 +2256,194 @@ select:focus-visible {
   background: rgba(248, 250, 252, 0.72);
 }
 
-@media (max-width: 640px) {
-  #root {
-    padding: 0;
-  }
-
+@media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
-    gap: 18px;
-    padding: 14px 12px 22px;
   }
 
   .sidebar {
     position: static;
     min-height: auto;
-    padding: 14px;
-  }
-
-  .sidebar-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sidebar-summary {
     margin-top: 16px;
   }
+}
+
+@media (max-width: 640px) {
+  #root {
+    padding: 0;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 10% 0%, rgba(26, 115, 232, 0.14), transparent 18rem),
+      linear-gradient(160deg, #f8fafc 0%, #eef2f7 100%);
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 18px 16px 28px;
+  }
+
+  .sidebar-toggle {
+    position: static;
+    flex: 0 0 44px;
+    display: grid;
+    gap: 5px;
+    place-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 8px;
+    background: rgba(20, 27, 36, 0.9);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(14px);
+  }
+
+  .sidebar-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    border-radius: 999px;
+    background: #e8edf7;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 38;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 7, 18, 0.52);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 39;
+    width: min(86vw, 330px);
+    height: 100dvh;
+    min-height: 0;
+    padding: 14px;
+    border-radius: 8px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    overflow-y: auto;
+    transform: translateX(calc(-100% - 18px));
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 24px 0 54px rgba(0, 0, 0, 0.34);
+  }
+
+  .sidebar-close {
+    display: grid;
+    place-items: center;
+  }
+
+  .sidebar-brand {
+    padding-bottom: 12px;
+  }
+
+  .sidebar-nav {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .sidebar-link {
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: 0.88rem;
+  }
+
+  .sidebar-mobile-section {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #e1e7ef;
+  }
+
+  .sidebar-workspace-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .sidebar-workspace-link,
+  .sidebar-settings-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: #526071;
+    font-size: 0.9rem;
+    font-weight: 850;
+    text-align: left;
+    background: #eef2f7;
+  }
+
+  .sidebar-workspace-link.active {
+    color: #ffffff;
+    background: #1a73e8;
+  }
+
+  .sidebar-settings-link {
+    margin-top: 10px;
+  }
+
+  .sidebar-summary {
+    grid-template-columns: auto auto;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .sidebar-summary strong {
+    justify-self: end;
+    font-size: 1.35rem;
+  }
+
+  .sidebar-summary .progress-track {
+    grid-column: 1 / -1;
+  }
 
   .to-do-list {
     width: 100%;
+    padding-top: 0;
   }
 
   .to-do-list h1 {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
+    font-size: clamp(1.7rem, 9vw, 2.25rem);
   }
 
   .navbar {
-    align-items: flex-start;
-    flex-direction: column;
-    margin-bottom: 26px;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+    min-height: auto;
+    margin-bottom: 34px;
+    padding-bottom: 22px;
+  }
+
+  .navbar-main {
+    width: 100%;
   }
 
   .navbar-actions {
-    flex-wrap: wrap;
+    display: none;
   }
 
   .login-shell {
@@ -2256,13 +2454,86 @@ select:focus-visible {
     padding: 18px;
   }
 
+  .workspace-create-card,
+  .task-section,
   .timetable-section {
-    padding: 14px;
+    padding: 16px;
+  }
+
+  .workspace-section-main {
+    display: grid;
+    gap: 24px;
+    margin-bottom: 22px;
+  }
+
+  .workspace-section-main h1 {
+    margin-bottom: 0;
+  }
+
+  .workspace-create-card {
+    max-width: 780px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  }
+
+  .workspace-form {
+    grid-template-columns: minmax(0, 1fr) 132px;
+    gap: 10px;
+  }
+
+  .workspace-form button {
+    width: 100%;
+  }
+
+  .workspace-section-main .workspace-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    justify-content: stretch;
+  }
+
+  .workspace-row {
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: 16px;
+  }
+
+  .workspace-progress-meta {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .workspace-rename-row {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .workspace-rename-row button {
+    min-height: 40px;
+  }
+
+  .to-do-list > div:first-of-type {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .to-do-list input[type="text"] {
+    min-height: 48px;
   }
 
   .timetable-header {
     flex-direction: column;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .timetable-actions,
+  .workspace-tool-actions {
+    width: 100%;
+  }
+
+  .timetable-actions button,
+  .workspace-tool-actions button {
+    flex: 1 1 150px;
   }
 
   .timetable-days {
@@ -2275,12 +2546,45 @@ select:focus-visible {
     font-size: 0.92rem;
   }
 
+  .timetable-modal,
+  .timed-task-modal {
+    align-items: start;
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .timetable-section-popup,
+  .timed-task-panel {
+    width: 100%;
+    max-height: none;
+  }
+
+  .timed-task-panel {
+    padding: 14px;
+  }
+
+  .timed-task-header {
+    gap: 10px;
+  }
+
+  .timed-task-header h2 {
+    font-size: 1.2rem;
+  }
+
   .timetable-list {
     gap: 16px;
   }
 
+  .timetable-list::before {
+    left: 10px;
+  }
+
+  .timetable-item {
+    gap: 8px;
+  }
+
   .timetable-card {
-    margin-left: 36px;
+    margin-left: 34px;
     padding: 14px;
   }
 
@@ -2293,7 +2597,13 @@ select:focus-visible {
     gap: 0;
   }
 
-  .workspace-section-main .workspace-list,
+  .task-section,
+  .timetable-section,
+  .workspace-row,
+  .workspace-create-card {
+    margin-top: 0;
+  }
+
   .workspace-section-main .workspace-rename-row,
   .workspace-card-header {
     grid-template-columns: 1fr;
@@ -2304,12 +2614,17 @@ select:focus-visible {
     border-top: 1px solid #e1e7ef;
   }
 
-  .to-do-list > div:first-of-type,
   .to-do-list li,
   .timetable-form,
   .timed-task-form,
   .timetable-item {
     grid-template-columns: 1fr;
+  }
+
+  .to-do-list li {
+    gap: 8px;
+    align-items: stretch;
+    min-height: auto;
   }
 
   .to-do-list li::before {
@@ -2325,5 +2640,29 @@ select:focus-visible {
   .timed-task-open-button,
   .status-select {
     width: 100%;
+  }
+
+  .delete-task,
+  .completed-button,
+  .add-button,
+  .timetable-form button,
+  .timed-task-form button {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-shell {
+    padding-inline: 12px;
+  }
+
+  .workspace-form,
+  .workspace-section-main .workspace-list {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-row {
+    min-height: 0;
+    aspect-ratio: 1;
   }
 }

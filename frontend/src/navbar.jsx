@@ -1,9 +1,27 @@
-function Navbar({ workspaceName, onAddWorkspaceClick, onSettingsClick }) {
+function Navbar({
+  workspaceName,
+  onAddWorkspaceClick,
+  onMenuClick,
+  onSettingsClick,
+}) {
   return (
     <nav className="navbar">
-      <div className="navbar-title">
-        <span>Workspace</span>
-        <strong>{workspaceName}</strong>
+      <div className="navbar-main">
+        <button
+          aria-label="Open menu"
+          className="sidebar-toggle"
+          onClick={onMenuClick}
+          type="button"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <div className="navbar-title">
+          <span>Workspace</span>
+          <strong>{workspaceName}</strong>
+        </div>
       </div>
 
       <div className="navbar-actions">

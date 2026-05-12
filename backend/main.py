@@ -165,9 +165,10 @@ app.add_middleware(
     allow_origins=[
         "https://to-do-app-frontend-8tuw.onrender.com"
         
-        
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ],
-    #allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -357,10 +358,10 @@ def update_todo(
         todo.completed = todo_data.completed
 
     if todo_data.time_left_minutes is not None:
-        if todo_data.time_left_minutes < 1:
+        if todo_data.time_left_minutes < 0:
             raise HTTPException(
                 status_code=400,
-                detail="Time left must be at least 1 minute",
+                detail="Time left cannot be negative",
             )
 
         todo.time_left_minutes = todo_data.time_left_minutes

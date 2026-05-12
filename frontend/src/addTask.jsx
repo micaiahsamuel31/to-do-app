@@ -43,6 +43,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   const [activeTimetableDay, setActiveTimetableDay] = useState("mon");
   const [currentPage, setCurrentPage] = useState("workspaces");
   const [previousPage, setPreviousPage] = useState("workspaces");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("taskboard-theme");
 
@@ -82,10 +83,11 @@ function ToDoList({ authToken, onLogout, passwordLength }){
     document.body.dataset.theme = theme;
     localStorage.setItem("taskboard-theme", theme);
   }, [theme]);
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasks((currentTasks) =>
-        currentTasks.map((task) => {
+      setTasks((currentTasks) => {
+        const updatedTasks = currentTasks.map((task) => {
           if (
             task.completed ||
             task.timeLeftMinutes == null ||
@@ -98,12 +100,27 @@ function ToDoList({ authToken, onLogout, passwordLength }){
             ...task,
             timeLeftMinutes: task.timeLeftMinutes - 1,
           };
-        })
-      );
+        });
+
+        updatedTasks.forEach((task, index) => {
+          const previousTask = currentTasks[index];
+
+          if (task.timeLeftMinutes !== previousTask.timeLeftMinutes) {
+            apiRequest(`/todos/${task.id}`, {
+              method: "PATCH",
+              body: { time_left_minutes: task.timeLeftMinutes },
+            }, authToken).catch((error) => {
+              setDataError(error.message);
+            });
+          }
+        });
+
+        return updatedTasks;
+      });
     }, 60000); // every 1 minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
     let ignoreResponse = false;
@@ -649,11 +666,25 @@ function ToDoList({ authToken, onLogout, passwordLength }){
 
   return(
   <div className="app-shell">
+    {isSidebarOpen && (
+      <button
+        aria-label="Close menu"
+        className="sidebar-overlay"
+        onClick={() => setIsSidebarOpen(false)}
+        type="button"
+      />
+    )}
     <Sidebar
       activeView={activeView}
       pendingCount={pendingTasks.length}
       completedCount={completedTasks.length}
+      workspaces={workspaces}
+      activeWorkspaceId={activeWorkspaceId}
+      isOpen={isSidebarOpen}
+      onClose={() => setIsSidebarOpen(false)}
       onViewChange={changeTaskView}
+      onWorkspaceOpen={openWorkspace}
+      onSettingsClick={openSettings}
     />
 
     <main className="to-do-list">
@@ -666,6 +697,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
               : "All Workspaces"
         }
         onAddWorkspaceClick={focusWorkspaceInput}
+        onMenuClick={() => setIsSidebarOpen(true)}
         onSettingsClick={openSettings}
       />
       {dataError && <p className="empty">{dataError}</p>}
@@ -693,7 +725,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
             onClick={() => setCurrentPage("workspaces")}
             type="button"
           >
-            Back to Workspaces
+            Back to Workspace
           </button>
 
           <h1>{activeWorkspace?.name}</h1>
@@ -722,7 +754,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
                     <li key={task.id}>
                       <span className="task-copy">
                         <span className="text">{task.title}</span>
-                        {task.timeLeftMinutes && (
+                        {task.timeLeftMinutes != null && (
                           <span className="time-left">
                             {formatTimeLeft(task.timeLeftMinutes)}
                           </span>
@@ -742,7 +774,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
                   <li key={task.id} className="done">
                     <span className="task-copy">
                       <span className="text">{task.title}</span>
-                      {task.timeLeftMinutes && (
+                      {task.timeLeftMinutes != null && (
                         <span className="time-left">
                           {formatTimeLeft(task.timeLeftMinutes)}
                         </span>
@@ -852,8 +884,8 @@ function ToDoList({ authToken, onLogout, passwordLength }){
         </>
       ) : (
         <section className="workspace-section workspace-section-main">
-        <h1>Workspaces</h1>
-        <div className="sidebar-section-title">Workspaces</div>
+        <h1>Workspace</h1>
+        <div className="sidebar-section-title">Workspace</div>
 
         <div className="workspace-create-card">
           <div className="workspace-form">
