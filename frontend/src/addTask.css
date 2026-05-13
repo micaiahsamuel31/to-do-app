@@ -2486,19 +2486,34 @@ select:focus-visible {
 
   .workspace-section-main .workspace-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    gap: 14px;
     justify-content: stretch;
   }
 
   .workspace-row {
+    grid-template-rows: auto 1fr auto;
     min-height: 0;
+    height: auto;
     aspect-ratio: 1;
-    padding: 16px;
+    padding: 14px;
+  }
+
+  .workspace-button {
+    min-height: auto;
+    font-size: 1rem;
+  }
+
+  .workspace-menu-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .workspace-progress {
+    gap: 6px;
   }
 
   .workspace-progress-meta {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    font-size: 0.72rem;
   }
 
   .workspace-rename-row {
@@ -2656,13 +2671,29 @@ select:focus-visible {
     padding-inline: 12px;
   }
 
-  .workspace-form,
-  .workspace-section-main .workspace-list {
+  .workspace-form {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-section-main .workspace-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .workspace-row {
     min-height: 0;
     aspect-ratio: 1;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 350px) {
+  .workspace-section-main .workspace-list {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-row {
+    width: min(100%, 220px);
+    justify-self: center;
   }
 }
