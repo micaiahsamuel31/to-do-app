@@ -166,7 +166,9 @@ app = FastAPI(title="Todo API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://to-do-app-frontend-8tuw.onrender.com"
+        
+        "https://mendapp.online",
+        "https://www.mendapp.online",
         
         
     ],
