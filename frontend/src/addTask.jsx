@@ -26,6 +26,37 @@ function mapTimetableItem(item){
   };
 }
 
+function getNavigationStateFromLocation(){
+  if (typeof window === "undefined") {
+    return { page: "workspaces", workspaceId: null };
+  }
+
+  const hash = window.location.hash.replace("#", "");
+
+  if (hash.startsWith("workspace-")) {
+    const workspaceId = Number(hash.replace("workspace-", ""));
+
+    return {
+      page: "workspace",
+      workspaceId: Number.isNaN(workspaceId) ? null : workspaceId,
+    };
+  }
+
+  if (hash === "settings") {
+    return { page: "settings", workspaceId: null };
+  }
+
+  return { page: "workspaces", workspaceId: null };
+}
+
+function getNavigationUrl(page, workspaceId){
+  if (page === "workspace" && workspaceId != null) {
+    return `#workspace-${workspaceId}`;
+  }
+
+  return `#${page}`;
+}
+
 
 function ToDoList({ authToken, onLogout, passwordLength }){
 
@@ -41,7 +72,9 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   const [newTimedTaskHours, setNewTimedTaskHours] = useState("");
   const [newTimedTaskMinutes, setNewTimedTaskMinutes] = useState("");
   const [activeTimetableDay, setActiveTimetableDay] = useState("mon");
-  const [currentPage, setCurrentPage] = useState("workspaces");
+  const [currentPage, setCurrentPage] = useState(
+    () => getNavigationStateFromLocation().page
+  );
   const [previousPage, setPreviousPage] = useState("workspaces");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
@@ -50,7 +83,9 @@ function ToDoList({ authToken, onLogout, passwordLength }){
     return savedTheme === "light" ? "light" : "dark";
   });
   const [workspaces, setWorkspaces] = useState([]);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(null);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(
+    () => getNavigationStateFromLocation().workspaceId
+  );
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
@@ -78,11 +113,63 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   const workspaceTimetable = timetableItems
     .filter((item) => item.workspaceId === activeWorkspaceId && item.day === activeTimetableDay)
     .sort((a, b) => a.time.localeCompare(b.time));
+
+  function navigateToPage(page, workspaceId = activeWorkspaceId){
+    const nextWorkspaceId = workspaceId == null ? null : Number(workspaceId);
+    const navigationState = {
+      page,
+      workspaceId: page === "workspaces" ? null : nextWorkspaceId,
+    };
+
+    if (page === "workspace" && nextWorkspaceId != null) {
+      setActiveWorkspaceId(nextWorkspaceId);
+    }
+
+    setCurrentPage(page);
+    setIsSidebarOpen(false);
+    setOpenWorkspaceMenuId(null);
+    window.history.pushState(
+      navigationState,
+      "",
+      getNavigationUrl(page, navigationState.workspaceId)
+    );
+  }
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
     localStorage.setItem("taskboard-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const initialNavigation = getNavigationStateFromLocation();
+
+    window.history.replaceState(
+      initialNavigation,
+      "",
+      getNavigationUrl(initialNavigation.page, initialNavigation.workspaceId)
+    );
+
+    function handleBrowserBack(event){
+      const navigationState = event.state || getNavigationStateFromLocation();
+      const nextPage = navigationState.page || "workspaces";
+      const nextWorkspaceId = navigationState.workspaceId;
+
+      setCurrentPage(nextPage);
+      setIsSidebarOpen(false);
+      setOpenWorkspaceMenuId(null);
+
+      if (nextWorkspaceId != null) {
+        setActiveWorkspaceId(Number(nextWorkspaceId));
+      }
+    }
+
+    window.addEventListener("popstate", handleBrowserBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleBrowserBack);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -419,9 +506,8 @@ function ToDoList({ authToken, onLogout, passwordLength }){
     );
 
     if (existingWorkspace) {
-      setActiveWorkspaceId(existingWorkspace.id);
       setActiveView("pending");
-      setCurrentPage("workspace");
+      navigateToPage("workspace", existingWorkspace.id);
       setNewWorkspaceName("");
       return;
     }
@@ -434,9 +520,8 @@ function ToDoList({ authToken, onLogout, passwordLength }){
       }, authToken);
 
       setWorkspaces([...workspaces, workspace]);
-      setActiveWorkspaceId(workspace.id);
       setActiveView("pending");
-      setCurrentPage("workspace");
+      navigateToPage("workspace", workspace.id);
       setNewWorkspaceName("");
     } catch (error) {
       setDataError(error.message);
@@ -456,7 +541,7 @@ function ToDoList({ authToken, onLogout, passwordLength }){
 
   function openWorkspace(workspaceId){
     changeWorkspace(workspaceId);
-    setCurrentPage("workspace");
+    navigateToPage("workspace", workspaceId);
   }
 
   function handleWorkspaceCardKeyDown(event, workspaceId){
@@ -469,17 +554,17 @@ function ToDoList({ authToken, onLogout, passwordLength }){
   }
 
   function focusWorkspaceInput(){
-    setCurrentPage("workspaces");
+    navigateToPage("workspaces", null);
     setTimeout(() => workspaceInputRef.current?.focus(), 0);
   }
 
   function openSettings(){
     setPreviousPage(currentPage);
-    setCurrentPage("settings");
+    navigateToPage("settings", activeWorkspaceId);
   }
 
   function closeSettings(){
-    setCurrentPage(previousPage);
+    navigateToPage(previousPage, activeWorkspaceId);
   }
 
   function toggleTheme(){
@@ -488,7 +573,11 @@ function ToDoList({ authToken, onLogout, passwordLength }){
 
   function changeTaskView(view){
     setActiveView(view);
-    setCurrentPage("workspace");
+    setIsSidebarOpen(false);
+
+    if (currentPage !== "workspace") {
+      navigateToPage("workspace", activeWorkspaceId);
+    }
   }
 
   function startWorkspaceRename(workspace){
@@ -722,10 +811,10 @@ function ToDoList({ authToken, onLogout, passwordLength }){
         <>
           <button
             className="back-button"
-            onClick={() => setCurrentPage("workspaces")}
+            onClick={() => navigateToPage("workspaces", null)}
             type="button"
           >
-            Back to Workspace
+            Back to Workspaces
           </button>
 
           <h1>{activeWorkspace?.name}</h1>
